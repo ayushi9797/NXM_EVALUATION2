@@ -1,0 +1,96 @@
+Create two collections, "users" and "purchases".
+
+QUESTION 1 :-> Create an index on the user_id field in the purchases collection to improve the performance of your queries.
+
+ANSWER :-> db.purchases.createIndex( { "user_id": 1 } )
+
+=================================================================================================================================
+QUESTION 2 :-> Use the $lookup operator in an aggregation pipeline to join the users and purchases collections, and return a new documents that contains the name and age of each user, along with their purchases. The output should look like this:
+
+ANSWER :-> db.users.aggregate([
+   {
+      $lookup:
+         {
+           from: "purchases",
+           localField: "_id",
+           foreignField: "user_id",
+           as: "user_purchases"
+         }
+   }
+])
+
+QUESTION 3  Use the $group operator in an aggregation pipeline to calculate the total number of purchases and total spending for each user. The output should look like this:
+
+ANSWER db.purchase.aggregate([
+   {
+      $group: {
+         _id: "$user_id",
+         totalPurchases: { $sum: 1 },
+         totalSpending: { $sum: "$amount" }
+      }
+   }
+])
+
+
+QUESTION 4 :-> Use the $sort operator to sort the output documents by total spending in descending order. The output should look like this:
+
+
+ANSWER 
+db.purchase.aggregate([
+   {
+      $lookup: {
+         from: "users",
+         localField: "user_id",
+         foreignField: "_id",
+         as: "user"
+      }
+   },
+   {
+      $group: {
+         _id: "$user_id",
+         name: { $first: "$user.name" },
+         totalSpending: { $sum: "$price" },
+         totalPurchases: { $sum: 1 }
+      }
+   },
+   {
+      $sort: { totalSpending: -1 }
+   },
+   {
+      $project: {
+         _id: "$_id",
+         name: 1,
+         totalSpending: 1,
+         totalPurchases: 1
+      }
+   }
+])
+
+
+QUESTION 5 :-> Cross check the total_purchases and total_spending, if it is correct, by adding more purchases in the purchases collection and running your aggregation pipeline again.
+
+ANSWER :-> 
+
+db.users.aggregate([
+   {
+      $lookup:
+         {
+           from: "purchase",
+           localField: "_id",
+           foreignField: "user_id",
+           as: "purchase"
+         }
+   },
+   {
+      $group:
+      {
+         _id: "$_id",
+         name: { $first: "$name" },
+         total_purchase: { $sum: { $size: "$purchase" } },
+         total_spending: { $sum: { $sum: "$purchase.price" } }
+      }
+   },
+   {
+      $sort: { total_spending: -1 }
+   }
+])
